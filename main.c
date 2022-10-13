@@ -67,8 +67,9 @@ struct EquationSystem getsystem(char *filepath) {
         matrix[i] = values;
     }
 
+    matrix[order] = malloc(sizeof(float) * (order + 1));
     for (int i = 0; i <  order; i++) 
-        matrix[order + 1][i] = i;
+        matrix[order][i] = i;
 
     struct EquationSystem ret = { matrix, order };
     return ret;
