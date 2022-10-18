@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #define fpath ".\\file.txt"
+#define linesize 100
 
 struct EquationSystem {
-    float **matrix;
+    int **matrix;
     int order;
 };
 
@@ -28,13 +30,13 @@ char *strtrim(char *str) {
     return str;
 }
 
-float *getvaluesinline(char *str, int order) {
+int *getvaluesinline(char *str, int order) {
     char *trstr = strtrim(str);
     char *tok = strtok(trstr, " ");
-    float *ret = malloc(sizeof(float) * (order + 1));
+    int *ret = malloc(sizeof(int) * (order + 1));
 
-    for (int i = 0; i < order; i++) {
-        ret[i] = atof(tok);
+    for (int i = 0; tok != NULL; i++) {
+        ret[i] = atoi(tok);
         tok = strtok(NULL, " ");
     }
 
@@ -51,9 +53,9 @@ struct EquationSystem getsystem(char *filepath) {
     }
 
     // Gets the order of the matrix located in the first line of the file
-    char line[100];
+    char line[linesize];
         // Checks if the file is empty
-    if (fgets(line, 100, file) == NULL) {
+    if (fgets(line, linesize, file) == NULL) {
         printf("File is empty");
         exit(-1);
     }
@@ -62,12 +64,12 @@ struct EquationSystem getsystem(char *filepath) {
     int order = atoi(strtrim(line));
     float **matrix = malloc(sizeof(float) * (order + 1));
 
-    for (int i = 0; fgets(line, 100, file) != NULL; i++) {
-        float *values = getvaluesinline(line, order);
+    for (int i = 0; fgets(line, linesize, file) != NULL; i++) {
+        int *values = getvaluesinline(line, order);
         matrix[i] = values;
     }
 
-    matrix[order] = malloc(sizeof(float) * (order + 1));
+    matrix[order] = malloc(sizeof(int) * (order + 1));
     for (int i = 0; i <  order; i++) 
         matrix[order][i] = i;
 
@@ -75,7 +77,50 @@ struct EquationSystem getsystem(char *filepath) {
     return ret;
 }
 
+void intcpy(int *from, int *to, int size) {
+    // TODO: Implement
+}
+
+int smallest(int *num, int size) {
+    int ret = INT_MAX;
+
+    for (int i = 0; i < size; i++) {
+        if (ret > num[i])
+            ret = num[i];
+    }
+
+    return ret;
+}
+
+int mcd(int *num, int size) {
+    int *aux = malloc(sizeof(int) * size);
+    intcpy(num, aux, size);
+
+    int ret = 1;
+    int min = smallest(aux, size);
+    for (int n = min; n > 1; n--) {
+        char isdiv = 1;
+        for (int i = 0; i < size; i++) // TODO: Fix this logic
+            if (aux[i] % n != 0)
+                isdiv = 0;
+
+        if (!isdiv)
+            continue;
+
+        ret = ret * n;
+        for (int i = 0; i < size; i++)
+            aux[i] = aux[i] / n;
+    }
+    free(aux);
+    return ret;
+}
+
+char issolvable(struct EquationSystem *sys) {
+    // TODO: implement
+}
+
 int main() {
     struct EquationSystem sys;
     sys = getsystem(fpath);
+
 }
