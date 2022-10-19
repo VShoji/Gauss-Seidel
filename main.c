@@ -30,7 +30,7 @@ char *strtrim(char *str) {
     return str;
 }
 
-int *getvaluesinline(char *str, int order) {
+int *getValuesInLine(char *str, int order) {
     char *trstr = strtrim(str);
     char *tok = strtok(trstr, " ");
     int *ret = malloc(sizeof(int) * (order + 1));
@@ -43,7 +43,7 @@ int *getvaluesinline(char *str, int order) {
     return ret;
 }
 
-struct EquationSystem getsystem(char *filepath) {
+struct EquationSystem getSystem(char *filepath) {
     // Open file
     FILE *file = fopen(filepath, "r");
         // Checks if file has been opened succesfully 
@@ -62,10 +62,10 @@ struct EquationSystem getsystem(char *filepath) {
 
     // Converts the order from the line into an integer
     int order = atoi(strtrim(line));
-    float **matrix = malloc(sizeof(float) * (order + 1));
+    int **matrix = malloc(sizeof(int) * (order + 1));
 
     for (int i = 0; fgets(line, linesize, file) != NULL; i++) {
-        int *values = getvaluesinline(line, order);
+        int *values = getValuesInLine(line, order);
         matrix[i] = values;
     }
 
@@ -78,7 +78,8 @@ struct EquationSystem getsystem(char *filepath) {
 }
 
 void intcpy(int *from, int *to, int size) {
-    // TODO: Implement
+    for (int i = 0; i < size; i++)
+        to[i] = from[i];
 }
 
 int smallest(int *num, int size) {
@@ -92,35 +93,120 @@ int smallest(int *num, int size) {
     return ret;
 }
 
-int mcd(int *num, int size) {
-    int *aux = malloc(sizeof(int) * size);
-    intcpy(num, aux, size);
+int *getDifFactors(int *num, int size) {
+    int *ret = malloc(sizeof(int) * size);
+    intcpy(num, ret, size);
 
     int ret = 1;
-    int min = smallest(aux, size);
+    int min = smallest(ret, size);
     for (int n = min; n > 1; n--) {
         char isdiv = 1;
         for (int i = 0; i < size; i++) // TODO: Fix this logic
-            if (aux[i] % n != 0)
+            if (ret[i] % n != 0)
                 isdiv = 0;
 
         if (!isdiv)
             continue;
 
-        ret = ret * n;
         for (int i = 0; i < size; i++)
-            aux[i] = aux[i] / n;
+            ret[i] = ret[i] / n;
     }
-    free(aux);
+    
     return ret;
 }
 
-char issolvable(struct EquationSystem *sys) {
-    // TODO: implement
+char hasSimilarLines(struct EquationSystem *sys) {
+    char isDiff = 0;
+    int order = sys->order;
+    int **cpy = malloc(sizeof(int) * order);
+    for (int i = 0; i < order; i++)
+        cpy[i] = getDifFactors(sys->matrix[i], order);
+
+    for (int c = 0; c < order - 1; c++) {
+        for (int i = c + 1; i < order; i++) {
+            isDiff = 0;
+            for (int j = 0; j < order; j++)
+                if (cpy[c][j] != cpy[i][j]) {
+                    isDiff = 1;
+                    break;
+                }
+
+            if (!isDiff)
+                break;
+        }
+
+        if (!isDiff)
+            break;
+    }
+
+    for (int i = 0; i < order; i++)
+        free(cpy[i]);
+    free(cpy);
+
+    return !isDiff;
+}
+
+char hasBeenReordered(struct EquationSystem *sys) {
+    int **mat = sys->matrix;
+    int order = sys->order;
+    char reordered = 0;
+
+    for (int i = 0; i < order; i ++) {
+        if (mat[i][i] != 0)
+            continue;
+
+        for (int j = 0; j < order; j++) {
+            if (i == j &&
+                mat[j][i] == 0 || mat[i][j] == 0)
+                continue;
+
+            int *aux = mat[i];
+            mat[i] = mat[j];
+            mat[j] = aux;
+        }
+    }
+
+    for (int i = 0; i < order; i ++) {
+        if (mat[i][i] != 0)
+            continue;
+
+        reordered = 0;
+        for (int j = 0; j < order + 1; j++) {
+            if (i == j &&
+                mat[j][i] == 0 || mat[i][j] == 0)
+                continue;
+
+            reordered = 1;
+            for (int l = 0; l < order; l++) {
+                int aux = mat[l][i];
+                mat[l][i] = mat[l][j];
+                mat[l][j] = aux;
+            }
+        }
+
+        if (!reordered)
+            break;
+    }
+
+    return reordered;
+}
+
+char isSolvable(struct EquationSystem *sys) {
+    if (hasSimilarLines(sys)) 
+        return 0;
+
+    if (!hasBeenReordered(sys))
+        return 0;
+
+    return 1;
 }
 
 int main() {
     struct EquationSystem sys;
-    sys = getsystem(fpath);
-
+    sys = getSystem(fpath);
+    if (!isSolvable(&sys)) {
+        printf("System is impossible to solve");
+        exit(-1);
+    }
+    
 }
