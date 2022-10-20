@@ -43,7 +43,7 @@ int *getValuesInLine(char *str, int order) {
     return ret;
 }
 
-struct EquationSystem getSystem(char *filepath) {
+void getSystem(char *filepath, struct EquationSystem *ret) {
     // Open file
     FILE *file = fopen(filepath, "r");
         // Checks if file has been opened succesfully 
@@ -73,13 +73,21 @@ struct EquationSystem getSystem(char *filepath) {
     for (int i = 0; i <  order; i++) 
         matrix[order][i] = i;
 
-    struct EquationSystem ret = { matrix, order };
-    return ret;
+    struct EquationSystem aux = { matrix, order };
+    *ret = aux;
 }
 
 void intcpy(int *from, int *to, int size) {
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i++) {
         to[i] = from[i];
+    }
+}
+
+int abs(int n) {
+    if (n > 0)
+        return n;
+
+    return -n;
 }
 
 int smallest(int *num, int size) {
@@ -97,8 +105,13 @@ int *getDifFactors(int *num, int size) {
     int *ret = malloc(sizeof(int) * size);
     intcpy(num, ret, size);
 
-    int ret = 1;
-    int min = smallest(ret, size);
+    // Gets lesser absolute value
+    int *aux = malloc(sizeof(int) * size);
+    for (int i = 0; i < size; i++)
+        aux[i] = abs(ret[i]);
+    int min = smallest(aux, size);
+    free(aux);
+
     for (int n = min; n > 1; n--) {
         char isdiv = 1;
         for (int i = 0; i < size; i++) // TODO: Fix this logic
@@ -118,9 +131,10 @@ int *getDifFactors(int *num, int size) {
 char hasSimilarLines(struct EquationSystem *sys) {
     char isDiff = 0;
     int order = sys->order;
+    int **mat = sys->matrix;
     int **cpy = malloc(sizeof(int) * order);
     for (int i = 0; i < order; i++)
-        cpy[i] = getDifFactors(sys->matrix[i], order);
+        cpy[i] = getDifFactors(mat[i], order);
 
     for (int c = 0; c < order - 1; c++) {
         for (int i = c + 1; i < order; i++) {
@@ -146,10 +160,24 @@ char hasSimilarLines(struct EquationSystem *sys) {
     return !isDiff;
 }
 
+void chrow(int **mat, int i, int j) {
+    int *aux = mat[i];
+    mat[i] = mat[j];
+    mat[j] = aux;
+}
+
+void chcol(int **mat, int order, int i, int j) {
+    for (int l = 0; l < order; l++) {
+        int aux = mat[l][i];
+        mat[l][i] = mat[l][j];
+        mat[l][j] = aux;
+    }
+}
+
 char hasBeenReordered(struct EquationSystem *sys) {
     int **mat = sys->matrix;
     int order = sys->order;
-    char reordered = 0;
+    char reordered = 1;
 
     for (int i = 0; i < order; i ++) {
         if (mat[i][i] != 0)
@@ -160,9 +188,7 @@ char hasBeenReordered(struct EquationSystem *sys) {
                 mat[j][i] == 0 || mat[i][j] == 0)
                 continue;
 
-            int *aux = mat[i];
-            mat[i] = mat[j];
-            mat[j] = aux;
+            chrow(mat, i, j);
         }
     }
 
@@ -176,12 +202,8 @@ char hasBeenReordered(struct EquationSystem *sys) {
                 mat[j][i] == 0 || mat[i][j] == 0)
                 continue;
 
+            chcol(mat, order, i, j);
             reordered = 1;
-            for (int l = 0; l < order; l++) {
-                int aux = mat[l][i];
-                mat[l][i] = mat[l][j];
-                mat[l][j] = aux;
-            }
         }
 
         if (!reordered)
@@ -201,12 +223,65 @@ char isSolvable(struct EquationSystem *sys) {
     return 1;
 }
 
+int greatest(int num1, int num2) {
+    if (num1 > num2)
+        return num1;
+
+    return num2;
+}
+
+int lcm(int num1, int num2) {
+    int ret = greatest(abs(num1), abs(num2));
+    while (ret % num1 != 0 || ret % num2 != 0)
+        ret++;
+
+    return ret;
+}
+
+void solve(struct EquationSystem sys, float *ret) { // TODO: fix calculations
+    int **mat = sys.matrix;
+    int order = sys.order;
+    for (int l = 0; l < order; l++) {
+        for (int i = 0; i < order; i++) {
+            if (l == i)
+                continue;
+            
+            int coef = mat[l][l];
+            int cancel = mat[i][l];
+            int mmc = lcm(coef, cancel);
+            int factor = mmc / abs(coef);
+            if (coef > 0 && cancel > 0 ||
+                coef < 0 && cancel < 0)
+                factor = -factor;
+
+            for (int j = 0; j < order + 1; j++)
+                mat[i][j] = mat[i][j] + mat[l][j] * factor;
+        }
+
+        // TODO: Checar se zerou algum dos coeficientes posteriores
+    }
+
+    for (int i = 0; i < order; i++) {
+        int j = 0;
+        while (j < order) {
+            if (i == mat[order][j])
+                break;
+
+            j++;
+        }
+        ret[i] = (float) mat[j][order] / mat[j][j];
+    }
+}
+
 int main() {
     struct EquationSystem sys;
-    sys = getSystem(fpath);
+    getSystem(fpath, &sys);
     if (!isSolvable(&sys)) {
         printf("System is impossible to solve");
         exit(-1);
     }
-    
+    float *solution = malloc(sizeof(float) * sys.order);
+    solve(sys, solution);
+    printf("%f", solution[1]);
+    exit(0);
 }
