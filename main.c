@@ -43,6 +43,7 @@ int *getValuesInLine(char *str, int order) {
     return ret;
 }
 
+// Gets a system of linear equations from a text file
 void getSystem(char *filepath, struct EquationSystem *ret) {
     // Open file
     FILE *file = fopen(filepath, "r");
@@ -60,24 +61,30 @@ void getSystem(char *filepath, struct EquationSystem *ret) {
         exit(-1);
     }
 
-    // Converts the order from the line into an integer
+    // Gets the order of the matrix from the file
     int order = atoi(strtrim(line));
     int **matrix = malloc(sizeof(int) * (order + 1));
 
+        // Gets the rest of the lines
     for (int i = 0; fgets(line, linesize, file) != NULL; i++) {
+            // Separates each value in the string and puts them into a line in the matrix
         int *values = getValuesInLine(line, order);
         matrix[i] = values;
     }
 
-    matrix[order] = malloc(sizeof(int) * (order + 1));
+    // The last row contains an index for each column
+    matrix[order] = (int*) malloc(sizeof(int) * (order + 1));
     for (int i = 0; i <  order; i++) 
         matrix[order][i] = i;
 
+    // Returns the system of linear equations
     struct EquationSystem aux = { matrix, order };
     *ret = aux;
 }
 
-void intcpy(int *from, int *to, int size) {
+
+// Copies an array of integers into another
+void intcpy(int *to, int *from, int size) {
     for (int i = 0; i < size; i++) {
         to[i] = from[i];
     }
@@ -90,6 +97,7 @@ int abs(int n) {
     return -n;
 }
 
+// Gets the lowest value in an array
 int smallest(int *num, int size) {
     int ret = INT_MAX;
 
@@ -103,24 +111,27 @@ int smallest(int *num, int size) {
 
 int *getdiffactors(int *num, int size) {
     int *ret = malloc(sizeof(int) * size);
-    intcpy(num, ret, size);
+    intcpy(ret, num, size);
 
-    // Gets lesser absolute value
+    // Gets lowest absolute value
     int *aux = malloc(sizeof(int) * size);
     for (int i = 0; i < size; i++)
         aux[i] = abs(ret[i]);
     int min = smallest(aux, size);
     free(aux);
 
+    // Divides every element by the maximum common divisor
     for (int n = min; n > 1; n--) {
         char isdiv = 1;
-        for (int i = 0; i < size; i++) // TODO: Fix this logic
+        // Checking if every element is dividable by the number
+        for (int i = 0; i < size; i++)
             if (ret[i] % n != 0)
                 isdiv = 0;
 
         if (!isdiv)
             continue;
 
+        // Dividing every element by the number
         for (int i = 0; i < size; i++)
             ret[i] = ret[i] / n;
     }
@@ -258,13 +269,13 @@ void solve(struct EquationSystem sys, float *ret) {
             
             int coef = mat[l][l];
             int cancel = mat[i][l];
-            if (coef > 0 && cancel < 0 ||
-                coef < 0 && cancel > 0) {
+            if (coef > 0 && cancel > 0 ||
+                coef < 0 && cancel < 0)
+                cancel = -cancel;
+            else {
                     coef = abs(coef);
                     cancel = abs(cancel);
-                }
-            else
-                cancel = -cancel;
+            }
 
             for (int j = 0; j < order + 1; j++) {
                 mat[i][j] = mat[i][j] * coef + mat[l][j] * cancel;
@@ -298,16 +309,21 @@ void getresstr(char *output, float *solution, int order) {
 }
 
 int main() {
+    // Gets the system of linear equations from the text file
     struct EquationSystem sys;
     getSystem(fpath, &sys);
+
+    // Checks if the system is solvable
     if (!issolvable(&sys)) {
         printf("System is impossible to solve\n");
         exit(-1);
     }
 
+    // Attempts to solve the system
     float *solution = malloc(sizeof(float) * sys.order);
     solve(sys, solution);
 
+    // Prints the solution
     char output[1001];
     getresstr(output, solution, sys.order);
     printf("Solution: {%s}\n", output);
