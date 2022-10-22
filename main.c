@@ -174,38 +174,49 @@ void chcol(int **mat, int order, int i, int j) {
     }
 }
 
+char rmzerorow(int **mat, int order, int l) {
+    int changed = 0;
+    for (int i = l + 1; i < order; i++) {
+        if (mat[l][i] == 0 || mat[i][l] == 0)
+            continue;
+
+        chrow(mat, l, i);
+        changed = 1;
+        break;
+    }
+    return changed;
+}
+
+char rmzerocol(int **mat, int order, int c) {
+    int changed = 0;
+    for (int j = c + 1; j < order; j++) {
+        if (mat[c][j] == 0 || mat[j][c] == 0)
+            continue;
+
+        chcol(mat, order, c, j);
+        changed = 1;
+        break;
+    }
+    return changed;
+}
+
 char rmzerodia(struct EquationSystem *sys) {
     int **mat = sys->matrix;
     int order = sys->order;
     char reordered = 1;
 
-    for (int i = 0; i < order; i ++) {
-        if (mat[i][i] != 0)
+    for (int r = 0; r < order; r++) {
+        if (mat[r][r] != 0)
             continue;
 
-        for (int j = 0; j < order; j++) {
-            if (i == j &&
-                mat[j][i] == 0 || mat[i][j] == 0)
-                continue;
-
-            chrow(mat, i, j);
-        }
+        rmzerorow(mat, order, r);
     }
 
-    for (int i = 0; i < order; i ++) {
-        if (mat[i][i] != 0)
+    for (int c = 0; c < order; c ++) {
+        if (mat[c][c] != 0)
             continue;
-
-        reordered = 0;
-        for (int j = 0; j < order + 1; j++) {
-            if (i == j &&
-                mat[j][i] == 0 || mat[i][j] == 0)
-                continue;
-
-            chcol(mat, order, i, j);
-            reordered = 1;
-        }
-
+        
+        reordered = rmzerocol(mat, order, c);;
         if (!reordered)
             break;
     }
@@ -234,6 +245,13 @@ void solve(struct EquationSystem sys, float *ret) {
     int **mat = sys.matrix;
     int order = sys.order;
     for (int l = 0; l < order; l++) {
+        if (mat[l][l] == 0)
+            if (!rmzerorow(mat, order, l))
+                if (!rmzerorow(mat, order, l)) {
+                    printf("System is impossible to solve\n");
+                    exit(-1);
+                }
+
         for (int i = 0; i < order; i++) {
             if (l == i)
                 continue;
@@ -249,13 +267,9 @@ void solve(struct EquationSystem sys, float *ret) {
                 cancel = -cancel;
 
             for (int j = 0; j < order + 1; j++) {
-                int aCancelar = mat[i][j];
-                int atual = mat[l][j];
                 mat[i][j] = mat[i][j] * coef + mat[l][j] * cancel;
             }
         }
-
-        // TODO: Checar se zerou algum dos coeficientes posteriores
     }
 
     for (int i = 0; i < order; i++) {
@@ -270,6 +284,19 @@ void solve(struct EquationSystem sys, float *ret) {
     }
 }
 
+void getresstr(char *output, float *solution, int order) {
+    output[0] = '(';
+    output[1] = '\0';
+    for (int i = 0; i < order; i++) {
+        char *append;
+        gcvt(solution[i], 4, append);
+        strcat(output, append);
+        if (i != order - 1)
+            strcat(output, ", ");
+    }
+    strcat(output, ")");
+}
+
 int main() {
     struct EquationSystem sys;
     getSystem(fpath, &sys);
@@ -277,8 +304,13 @@ int main() {
         printf("System is impossible to solve\n");
         exit(-1);
     }
+
     float *solution = malloc(sizeof(float) * sys.order);
     solve(sys, solution);
-    printf("%f", solution[1]); // (2, 1)
+
+    char output[1001];
+    getresstr(output, solution, sys.order);
+    printf("Solution: {%s}\n", output);
+
     exit(0);
 } 
