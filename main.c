@@ -101,7 +101,7 @@ int smallest(int *num, int size) {
     return ret;
 }
 
-int *getDifFactors(int *num, int size) {
+int *getdiffactors(int *num, int size) {
     int *ret = malloc(sizeof(int) * size);
     intcpy(num, ret, size);
 
@@ -128,13 +128,13 @@ int *getDifFactors(int *num, int size) {
     return ret;
 }
 
-char hasSimilarLines(struct EquationSystem *sys) {
+char hassimilarlines(struct EquationSystem *sys) {
     char isDiff = 0;
     int order = sys->order;
     int **mat = sys->matrix;
     int **cpy = malloc(sizeof(int) * order);
     for (int i = 0; i < order; i++)
-        cpy[i] = getDifFactors(mat[i], order);
+        cpy[i] = getdiffactors(mat[i], order);
 
     for (int c = 0; c < order - 1; c++) {
         for (int i = c + 1; i < order; i++) {
@@ -174,7 +174,7 @@ void chcol(int **mat, int order, int i, int j) {
     }
 }
 
-char hasBeenReordered(struct EquationSystem *sys) {
+char rmzerodia(struct EquationSystem *sys) {
     int **mat = sys->matrix;
     int order = sys->order;
     char reordered = 1;
@@ -213,11 +213,11 @@ char hasBeenReordered(struct EquationSystem *sys) {
     return reordered;
 }
 
-char isSolvable(struct EquationSystem *sys) {
-    if (hasSimilarLines(sys)) 
+char issolvable(struct EquationSystem *sys) {
+    if (hassimilarlines(sys)) 
         return 0;
 
-    if (!hasBeenReordered(sys))
+    if (!rmzerodia(sys))
         return 0;
 
     return 1;
@@ -230,15 +230,7 @@ int greatest(int num1, int num2) {
     return num2;
 }
 
-int lcm(int num1, int num2) {
-    int ret = greatest(abs(num1), abs(num2));
-    while (ret % num1 != 0 || ret % num2 != 0)
-        ret++;
-
-    return ret;
-}
-
-void solve(struct EquationSystem sys, float *ret) { // TODO: fix calculations
+void solve(struct EquationSystem sys, float *ret) {
     int **mat = sys.matrix;
     int order = sys.order;
     for (int l = 0; l < order; l++) {
@@ -248,14 +240,19 @@ void solve(struct EquationSystem sys, float *ret) { // TODO: fix calculations
             
             int coef = mat[l][l];
             int cancel = mat[i][l];
-            int mmc = lcm(coef, cancel);
-            int factor = mmc / abs(coef);
-            if (coef > 0 && cancel > 0 ||
-                coef < 0 && cancel < 0)
-                factor = -factor;
+            if (coef > 0 && cancel < 0 ||
+                coef < 0 && cancel > 0) {
+                    coef = abs(coef);
+                    cancel = abs(cancel);
+                }
+            else
+                cancel = -cancel;
 
-            for (int j = 0; j < order + 1; j++)
-                mat[i][j] = mat[i][j] + mat[l][j] * factor;
+            for (int j = 0; j < order + 1; j++) {
+                int aCancelar = mat[i][j];
+                int atual = mat[l][j];
+                mat[i][j] = mat[i][j] * coef + mat[l][j] * cancel;
+            }
         }
 
         // TODO: Checar se zerou algum dos coeficientes posteriores
@@ -276,12 +273,12 @@ void solve(struct EquationSystem sys, float *ret) { // TODO: fix calculations
 int main() {
     struct EquationSystem sys;
     getSystem(fpath, &sys);
-    if (!isSolvable(&sys)) {
-        printf("System is impossible to solve");
+    if (!issolvable(&sys)) {
+        printf("System is impossible to solve\n");
         exit(-1);
     }
     float *solution = malloc(sizeof(float) * sys.order);
     solve(sys, solution);
-    printf("%f", solution[1]);
+    printf("%f", solution[1]); // (2, 1)
     exit(0);
-}
+} 
