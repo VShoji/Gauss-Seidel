@@ -14,15 +14,15 @@ struct EquationSystem {
 char *strtrim(char *str) {
     char *end;
 
-    while (isspace((unsigned char)*str)) 
+    while (isspace((unsigned char)*str))
         str++;
 
     if(*str == 0)
         return str;
 
     end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end) 
-    || end > str && (unsigned char)*end == '\n') 
+    while(end > str && isspace((unsigned char)*end)
+    || end > str && (unsigned char)*end == '\n')
         end--;
 
     end[1] = '\0';
@@ -47,7 +47,7 @@ int *getValuesInLine(char *str, int order) {
 void getSystem(char *filepath, struct EquationSystem *ret) {
     // Open file
     FILE *file = fopen(filepath, "r");
-        // Checks if file has been opened succesfully 
+        // Checks if file has been opened succesfully
     if (file == NULL) {
         printf("Could not open file");
         exit(-1);
@@ -74,7 +74,7 @@ void getSystem(char *filepath, struct EquationSystem *ret) {
 
     // The last row contains an index for each column
     matrix[order] = (int*) malloc(sizeof(int) * (order + 1));
-    for (int i = 0; i <  order; i++) 
+    for (int i = 0; i <  order; i++)
         matrix[order][i] = i;
 
     // Returns the system of linear equations
@@ -135,7 +135,7 @@ int *getdiffactors(int *num, int size) {
         for (int i = 0; i < size; i++)
             ret[i] = ret[i] / n;
     }
-    
+
     return ret;
 }
 
@@ -185,13 +185,13 @@ void chcol(int **mat, int order, int i, int j) {
     }
 }
 
-char rmzerorow(int **mat, int order, int l) {
+char rmzerorow(int **mat, int order, int r) {
     int changed = 0;
-    for (int i = l + 1; i < order; i++) {
-        if (mat[l][i] == 0 || mat[i][l] == 0)
+    for (int i = 0; i < order; i++) {
+        if (mat[r][i] == 0 || mat[i][r] == 0)
             continue;
 
-        chrow(mat, l, i);
+        chrow(mat, r, i);
         changed = 1;
         break;
     }
@@ -200,7 +200,7 @@ char rmzerorow(int **mat, int order, int l) {
 
 char rmzerocol(int **mat, int order, int c) {
     int changed = 0;
-    for (int j = c + 1; j < order; j++) {
+    for (int j = 0; j < order; j++) {
         if (mat[c][j] == 0 || mat[j][c] == 0)
             continue;
 
@@ -226,7 +226,7 @@ char rmzerodia(struct EquationSystem *sys) {
     for (int c = 0; c < order; c ++) {
         if (mat[c][c] != 0)
             continue;
-        
+
         reordered = rmzerocol(mat, order, c);;
         if (!reordered)
             break;
@@ -236,7 +236,7 @@ char rmzerodia(struct EquationSystem *sys) {
 }
 
 char issolvable(struct EquationSystem *sys) {
-    if (hassimilarlines(sys)) 
+    if (hassimilarlines(sys))
         return 0;
 
     if (!rmzerodia(sys))
@@ -266,7 +266,7 @@ void solve(struct EquationSystem sys, float *ret) {
         for (int i = 0; i < order; i++) {
             if (l == i)
                 continue;
-            
+
             int coef = mat[l][l];
             int cancel = mat[i][l];
             if (coef > 0 && cancel > 0 ||
@@ -299,7 +299,7 @@ void getresstr(char *output, float *solution, int order) {
     output[0] = '(';
     output[1] = '\0';
     for (int i = 0; i < order; i++) {
-        char *append;
+        char append[1001];
         gcvt(solution[i], 4, append);
         strcat(output, append);
         if (i != order - 1)
@@ -329,7 +329,7 @@ int main() {
     printf("Solution: {%s}\n", output);
 
     // Require enter to exit
-    char ignore[101];
-    scanf("%s", &ignore);
-    exit(0);
-} 
+    //char ignore[101];
+    //scanf("%s", &ignore);
+    //exit(0);
+}
