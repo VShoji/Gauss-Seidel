@@ -328,5 +328,8 @@ int main() {
     getresstr(output, solution, sys.order);
     printf("Solution: {%s}\n", output);
 
+    // Require enter to exit
+    char ignore[101];
+    scanf("%s", &ignore);
     exit(0);
 } 
